@@ -76,15 +76,33 @@
     .script { font-family: 'Caveat', cursive; color: var(--green-soft); font-size: 1.8rem; transform: rotate(-4deg); display: inline-block; margin: 14px 0 8px; }
     .hero p.lead { font-size: 1.15rem; color: var(--muted); max-width: 30em; margin-bottom: 28px; }
     .hero-cta { display: flex; flex-wrap: wrap; gap: 12px; }
-    .hero-visual { position: relative; display: grid; place-items: center; min-height: 480px; }
-    /* mask ไล่ขอบรูปให้จาง ให้พื้นหลังของรูปกลืนไปกับพื้นเว็บ */
-    .hero-visual img {
-      position: relative; max-height: 560px; width: auto;
-      -webkit-mask-image: radial-gradient(ellipse 62% 72% at 50% 50%, #000 55%, transparent 100%);
-              mask-image: radial-gradient(ellipse 62% 72% at 50% 50%, #000 55%, transparent 100%);
-      animation: float 5s ease-in-out infinite;
+    .hero-visual { position: relative; display: flex; flex-direction: column; align-items: center; gap: 18px; min-height: 480px; justify-content: center; }
+
+    /* ขวดซ้อนกัน: data-pos 0 = ขวดหน้า, -1 / 1 = ขวดด้านหลังซ้าย/ขวา */
+    .bottles { position: relative; width: 100%; height: 520px; animation: float 5s ease-in-out infinite; touch-action: pan-y; }
+    .bottle {
+      position: absolute; bottom: 0; left: 50%; height: 100%; width: auto;
+      transform-origin: 50% 100%; cursor: pointer; user-select: none; -webkit-user-drag: none;
+      filter: drop-shadow(0 18px 22px rgba(31, 77, 58, .18));
+      transition: transform .6s cubic-bezier(.2, .8, .2, 1), filter .6s, opacity .6s;
     }
+    .bottle[data-pos="0"] { z-index: 3; transform: translateX(-50%); cursor: default; }
+    .bottle[data-pos="-1"] { z-index: 2; transform: translateX(-100%) scale(.78) rotate(-7deg); filter: drop-shadow(0 12px 16px rgba(31, 77, 58, .15)) brightness(.9); }
+    .bottle[data-pos="1"] { z-index: 2; transform: translateX(0) scale(.78) rotate(7deg); filter: drop-shadow(0 12px 16px rgba(31, 77, 58, .15)) brightness(.9); }
+    .bottle[data-pos="far"] { z-index: 1; transform: translateX(-50%) scale(.6); opacity: 0; pointer-events: none; }
     @keyframes float { 50% { transform: translateY(-12px); } }
+
+    .bottle-nav { display: flex; align-items: center; gap: 14px; }
+    .bottle-nav .arrow { width: 38px; height: 38px; border-radius: 50%; border: 1.5px solid var(--green); background: none; color: var(--green); font-size: 1.3rem; line-height: 1; cursor: pointer; transition: background .15s, color .15s; }
+    .bottle-nav .arrow:hover { background: var(--green); color: #fff; }
+    .bottle-label { min-width: 120px; text-align: center; font-weight: 600; letter-spacing: .06em; transition: color .4s; }
+    .dots { display: flex; gap: 8px; }
+    .dots button { width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--c); background: none; padding: 0; cursor: pointer; transition: background .3s, transform .3s; }
+    .dots button[aria-current="true"] { background: var(--c); transform: scale(1.2); }
+    @media (prefers-reduced-motion: reduce) {
+      .bottles { animation: none; }
+      .bottle { transition: none; }
+    }
 
     /* ---------- Features ---------- */
     .features { padding: 8px 0 56px; }
@@ -170,8 +188,8 @@
       .hero .wrap { grid-template-columns: 1fr; text-align: center; gap: 8px; }
       .hero p.lead { margin-inline: auto; }
       .hero-cta { justify-content: center; }
-      .hero-visual { min-height: 0; order: -1; }
-      .hero-visual img { max-height: 400px; }
+      .hero-visual { min-height: 0; order: -1; margin-bottom: 20px; }
+      .bottles { height: 360px; }
       .feature-row, .steps { grid-template-columns: repeat(2, 1fr); }
       .contact-box { grid-template-columns: 1fr; padding: 32px 24px; text-align: center; }
       .nav-links { display: none; }
@@ -210,8 +228,16 @@
           <a href="#contact" class="btn ghost js-line" target="_blank" rel="noopener">สั่งซื้อเลย</a>
         </div>
       </div>
-      <div class="hero-visual">
-        <img id="hero-img" src="pictures/S__96600087.jpg" alt="ขวด NAJA DRINKS Cold Pressed Juice">
+      <div class="hero-visual" aria-roledescription="carousel" aria-label="ขวด NAJA DRINKS ทุกสี">
+        <div class="bottles" id="bottles"></div>
+        <div class="bottle-nav">
+          <button class="arrow" data-step="-1" aria-label="สีก่อนหน้า">‹</button>
+          <div>
+            <div class="bottle-label" id="bottle-label" aria-live="polite"></div>
+            <div class="dots" id="bottle-dots"></div>
+          </div>
+          <button class="arrow" data-step="1" aria-label="สีถัดไป">›</button>
+        </div>
       </div>
     </div>
   </header>
@@ -296,27 +322,26 @@
         ingredients: ['🍊 ส้ม', '🥕 แครอท', '🍎 แอปเปิ้ล', '🍋 เลมอน'],
         description: 'สดชื่น หวานอมเปรี้ยว อุดมด้วยวิตามินซีและเบต้าแคโรทีน เติมพลังยามเช้า',
         benefits: ['วิตามินซีสูง', 'บำรุงผิว', 'เสริมภูมิคุ้มกัน'],
-        price: 40, image: ''
+        price: 40, image: '', bottle: 'pictures/bottle-orange.webp'
       },
       {
         id: '02', name: 'GREEN', color: '#3E8E41', bg: '#E4EFDF',
         ingredients: ['🥬 เคล', '🌿 เซลลารี่', '🍎 แอปเปิ้ล', '🍍 สับปะรด'],
         description: 'ผักใบเขียวเข้มข้น ดื่มง่ายด้วยความหวานจากสับปะรดและแอปเปิ้ล',
         benefits: ['ไฟเบอร์สูง', 'ดีท็อกซ์', 'ช่วยระบบขับถ่าย'],
-        price: 40, image: ''
+        price: 40, image: '', bottle: 'pictures/bottle-green.webp'
       },
       {
         id: '03', name: 'RED', color: '#C8283C', bg: '#F8E0E1',
         ingredients: ['🔴 บีทรูท', '🥕 แครอท', '🍎 แอปเปิ้ล', '🍍 สับปะรด'],
         description: 'สีแดงสวยจากบีทรูทแท้ รสชาติกลมกล่อม เหมาะกับคนรักการออกกำลังกาย',
         benefits: ['บำรุงเลือด', 'เพิ่มสตามิน่า', 'ต้านอนุมูลอิสระ'],
-        price: 40, image: ''
+        price: 40, image: '', bottle: 'pictures/bottle-red.webp'
       }
     ].filter(p => p.visible !== false);
 
     function renderShop() {
       if (shop.intro) document.getElementById('intro').textContent = shop.intro;
-      if (shop.heroImage) document.getElementById('hero-img').src = shop.heroImage;
       if (shop.unit) document.getElementById('unit').textContent = shop.unit;
       document.getElementById('note').textContent = shop.note || '';
       document.querySelectorAll('.js-line').forEach(a => { if (shop.lineUrl) a.href = shop.lineUrl; });
@@ -387,8 +412,61 @@
     });
     document.addEventListener('keydown', e => { if (e.key === 'Escape') modal.classList.remove('open'); });
 
+    // ---------- Bottle carousel ----------
+    const bottlesEl = document.getElementById('bottles');
+    const dotsEl = document.getElementById('bottle-dots');
+    const labelEl = document.getElementById('bottle-label');
+    const slides = products.filter(p => p.bottle);
+    let active = 0, autoplay = null;
+
+    function renderBottles() {
+      bottlesEl.innerHTML = slides.map((p, i) =>
+        `<img class="bottle" src="${esc(p.bottle)}" alt="ขวด NAJA ${esc(p.id)} ${esc(p.name)}" data-i="${i}" draggable="false">`).join('');
+      dotsEl.innerHTML = slides.map((p, i) =>
+        `<button style="--c:${esc(p.color)}" data-i="${i}" aria-label="${esc(p.id)} ${esc(p.name)}"></button>`).join('');
+      showBottle(0);
+    }
+
+    function showBottle(i) {
+      const n = slides.length;
+      if (!n) return;
+      active = (i + n) % n;
+      bottlesEl.querySelectorAll('.bottle').forEach((img, j) => {
+        let d = (j - active + n) % n;           // ระยะห่างจากขวดหน้า วนรอบได้ทั้งซ้ายและขวา
+        if (d > n / 2) d -= n;
+        img.dataset.pos = Math.abs(d) > 1 ? 'far' : d;
+      });
+      dotsEl.querySelectorAll('button').forEach((b, j) => b.setAttribute('aria-current', j === active));
+      labelEl.textContent = `${slides[active].id} ${slides[active].name}`;
+      labelEl.style.color = slides[active].color;
+    }
+
+    const stopAutoplay = () => clearInterval(autoplay);
+    if (!matchMedia('(prefers-reduced-motion: reduce)').matches) autoplay = setInterval(() => showBottle(active + 1), 4000);
+
+    document.querySelector('.bottle-nav').addEventListener('click', e => {
+      const step = e.target.closest('[data-step]');
+      const dot = e.target.closest('[data-i]');
+      if (step) { stopAutoplay(); showBottle(active + Number(step.dataset.step)); }
+      else if (dot) { stopAutoplay(); showBottle(Number(dot.dataset.i)); }
+    });
+    // ปัดซ้าย/ขวาบนมือถือ; swiped กันไม่ให้ click ที่ตามมานับเป็นการกดขวด
+    let startX = null, swiped = false;
+    bottlesEl.addEventListener('pointerdown', e => { startX = e.clientX; swiped = false; });
+    bottlesEl.addEventListener('pointerup', e => {
+      if (startX === null) return;
+      const dx = e.clientX - startX;
+      startX = null;
+      if (Math.abs(dx) > 40) { swiped = true; stopAutoplay(); showBottle(active + (dx < 0 ? 1 : -1)); }
+    });
+    bottlesEl.addEventListener('click', e => {
+      const img = e.target.closest('.bottle');
+      if (!swiped && img && img.dataset.pos !== '0') { stopAutoplay(); showBottle(Number(img.dataset.i)); }
+    });
+
     renderShop();
     renderProducts();
+    renderBottles();
   </script>
 </body>
 </html>
