@@ -260,9 +260,7 @@
           <p id="note"></p>
         </div>
         <div class="contact-actions">
-          <a href="#" class="btn line js-line" target="_blank" rel="noopener">💬 แชท LINE</a>
-          <a href="#" class="btn ghost" id="phone-btn">📞 <span id="phone-text"></span></a>
-        </div>
+          <a href="#" class="btn line js-line" target="_blank" rel="noopener">💬 แชท LINE</a>        </div>
       </div>
     </div>
   </section>
@@ -285,7 +283,6 @@
     // ข้อมูลร้าน: ช่องที่เว้นว่างไว้ ปุ่มหรือลิงก์ที่เกี่ยวข้องจะถูกซ่อน
     const shop = {
       unit: '180 ml',
-      phone: '',
       lineUrl: '',
       facebookUrl: '',
       instagramUrl: '',
@@ -323,15 +320,10 @@
       if (shop.unit) document.getElementById('unit').textContent = shop.unit;
       document.getElementById('note').textContent = shop.note || '';
       document.querySelectorAll('.js-line').forEach(a => { if (shop.lineUrl) a.href = shop.lineUrl; });
-      document.getElementById('phone-text').textContent = shop.phone || '';
-      document.getElementById('phone-btn').href = 'tel:' + String(shop.phone || '').replace(/[^\d+]/g, '');
-      document.getElementById('phone-btn').hidden = !shop.phone;
       const social = [['Facebook', shop.facebookUrl], ['Instagram', shop.instagramUrl], ['LINE', shop.lineUrl]].filter(s => s[1]);
       document.getElementById('social').innerHTML = social.map(([n, u]) => `<a href="${esc(u)}" target="_blank" rel="noopener">${n}</a>`).join('');
     }
     document.getElementById('year').textContent = new Date().getFullYear();
-    renderShop();
-    renderProducts();
 
     const cardTop = p => `
       <div class="card-top" style="background:${esc(p.bg)}">
@@ -394,6 +386,9 @@
       if (q) { qty = Math.max(1, qty + Number(q.dataset.q)); renderModal(); }
     });
     document.addEventListener('keydown', e => { if (e.key === 'Escape') modal.classList.remove('open'); });
+
+    renderShop();
+    renderProducts();
   </script>
 </body>
 </html>
