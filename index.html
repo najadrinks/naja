@@ -35,6 +35,7 @@
       line-height: 1.6;
       -webkit-font-smoothing: antialiased;
     }
+    [hidden] { display: none !important; }
     img { max-width: 100%; display: block; }
     a { color: inherit; text-decoration: none; }
     .wrap { width: min(1120px, 100% - 32px); margin-inline: auto; }
@@ -280,18 +281,41 @@
     const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     const shortList = p => p.ingredients.map(i => i.replace(/^\S+\s/, '')).join(' ');
     const grid = document.getElementById('product-grid');
-    let shop = {}, products = [];
 
-    // ?v= กันเบราว์เซอร์/CDN แคชข้อมูลเก่า หลังแก้จากหน้า admin
-    fetch('data/products.json?v=' + Date.now())
-      .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
-      .then(data => {
-        shop = data.shop || {};
-        products = (data.products || []).filter(p => p.visible !== false);
-        renderShop();
-        renderProducts();
-      })
-      .catch(() => { grid.innerHTML = '<div class="status">โหลดเมนูไม่สำเร็จ ลองรีเฟรชหน้าอีกครั้ง</div>'; });
+    // ข้อมูลร้าน: ช่องที่เว้นว่างไว้ ปุ่มหรือลิงก์ที่เกี่ยวข้องจะถูกซ่อน
+    const shop = {
+      unit: '180 ml',
+      phone: '',
+      lineUrl: '',
+      facebookUrl: '',
+      instagramUrl: '',
+      note: ''
+    };
+
+    // เมนู: ตั้ง visible: false เพื่อซ่อนเมนูที่หมดชั่วคราว
+    const products = [
+      {
+        id: '01', name: 'ORANGE', color: '#F28C28', bg: '#FDEBD8',
+        ingredients: ['🍊 ส้ม', '🥕 แครอท', '🍎 แอปเปิ้ล', '🍋 เลมอน'],
+        description: 'สดชื่น หวานอมเปรี้ยว อุดมด้วยวิตามินซีและเบต้าแคโรทีน เติมพลังยามเช้า',
+        benefits: ['วิตามินซีสูง', 'บำรุงผิว', 'เสริมภูมิคุ้มกัน'],
+        price: 59, image: ''
+      },
+      {
+        id: '02', name: 'GREEN', color: '#3E8E41', bg: '#E4EFDF',
+        ingredients: ['🥬 เคล', '🌿 เซลลารี่', '🍎 แอปเปิ้ล', '🍍 สับปะรด'],
+        description: 'ผักใบเขียวเข้มข้น ดื่มง่ายด้วยความหวานจากสับปะรดและแอปเปิ้ล',
+        benefits: ['ไฟเบอร์สูง', 'ดีท็อกซ์', 'ช่วยระบบขับถ่าย'],
+        price: 59, image: ''
+      },
+      {
+        id: '03', name: 'RED', color: '#C8283C', bg: '#F8E0E1',
+        ingredients: ['🔴 บีทรูท', '🥕 แครอท', '🍎 แอปเปิ้ล', '🍍 สับปะรด'],
+        description: 'สีแดงสวยจากบีทรูทแท้ รสชาติกลมกล่อม เหมาะกับคนรักการออกกำลังกาย',
+        benefits: ['บำรุงเลือด', 'เพิ่มสตามิน่า', 'ต้านอนุมูลอิสระ'],
+        price: 59, image: ''
+      }
+    ].filter(p => p.visible !== false);
 
     function renderShop() {
       if (shop.intro) document.getElementById('intro').textContent = shop.intro;
@@ -301,10 +325,13 @@
       document.querySelectorAll('.js-line').forEach(a => { if (shop.lineUrl) a.href = shop.lineUrl; });
       document.getElementById('phone-text').textContent = shop.phone || '';
       document.getElementById('phone-btn').href = 'tel:' + String(shop.phone || '').replace(/[^\d+]/g, '');
+      document.getElementById('phone-btn').hidden = !shop.phone;
       const social = [['Facebook', shop.facebookUrl], ['Instagram', shop.instagramUrl], ['LINE', shop.lineUrl]].filter(s => s[1]);
       document.getElementById('social').innerHTML = social.map(([n, u]) => `<a href="${esc(u)}" target="_blank" rel="noopener">${n}</a>`).join('');
     }
     document.getElementById('year').textContent = new Date().getFullYear();
+    renderShop();
+    renderProducts();
 
     const cardTop = p => `
       <div class="card-top" style="background:${esc(p.bg)}">
@@ -351,7 +378,7 @@
           </div>
           <a class="btn line" style="justify-content:center" target="_blank" rel="noopener"
              href="https://line.me/R/msg/text/?${encodeURIComponent(msg)}">💬 ส่งคำสั่งซื้อทาง LINE</a>
-          <a class="btn ghost" style="justify-content:center" target="_blank" rel="noopener" href="${esc(shop.lineUrl)}">เพิ่มเพื่อน LINE ร้าน</a>
+          ${shop.lineUrl ? `<a class="btn ghost" style="justify-content:center" target="_blank" rel="noopener" href="${esc(shop.lineUrl)}">เพิ่มเพื่อน LINE ร้าน</a>` : ''}
         </div>`;
     }
 
